@@ -1,0 +1,1 @@
+interaction_id,timestamp,rep_id,customer_phone,account_number,first_name,last_name,ivr_reason,callback_flag,cleanup_flag,port_out_flag,30DACC_flag,CRT_seconds,ai_call_summary,rep_memo,full_transcript,interaction_id_original

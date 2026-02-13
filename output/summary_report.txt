@@ -1,0 +1,46 @@
+TRUST SIGNAL HEALTH — SUMMARY REPORT
+========================================
+Rows analyzed: 10000
+
+OVERALL RATES
+- CBR (callback rate): 45.5%
+- CDS (cleanup rate): 55.1%
+- 30DACC rate: 19.0%
+- POR (port-out rate): 8.9%
+- Repeat contact rate: 60.3%
+- Avg drift_score: 0.4
+- CRT avg (seconds): 804.2
+- CRT p90 (seconds): 1048.8
+- CRT > 900s rate: 30.2%
+- CRT risk avg (scaled 480–900s): 0.687
+
+CRT INTERPRETATION
+- CRT is treated as a friction cost signal (higher is worse).
+- CRT risk is scaled: <= 480s → 0, >= 900s → 1.
+
+DRIFT CONCENTRATION (where risk clusters)
+- Top 10% of calls account for: 19.9% of total drift_score
+- Top 10% of customers account for: 80.1% of total drift_score (proxy)
+
+TOP 5 IVR REASONS BY DRIFT (avg)
+- Port-Out Request | calls=701 | drift=0.555 | POR=65.9% | 30DACC=46.5% | CDS=28.5% | CBR=54.4% | CRT_avg=953s | CRT_p90=1178s | CRT>thr=62.9%
+- Cancel Line | calls=839 | drift=0.511 | POR=5.1% | 30DACC=56.6% | CDS=57.2% | CBR=39.1% | CRT_avg=905s | CRT_p90=1153s | CRT>thr=50.2%
+- Promo Issue | calls=619 | drift=0.424 | POR=10.8% | 30DACC=20.7% | CDS=66.4% | CBR=48.1% | CRT_avg=873s | CRT_p90=1112s | CRT>thr=45.7%
+- Technical Support | calls=1204 | drift=0.374 | POR=6.1% | 30DACC=16.4% | CDS=52.2% | CBR=49.6% | CRT_avg=857s | CRT_p90=1097s | CRT>thr=40.3%
+- Device Activation | calls=1300 | drift=0.365 | POR=3.0% | 30DACC=7.9% | CDS=71.1% | CBR=34.2% | CRT_avg=789s | CRT_p90=1014s | CRT>thr=27.8%
+
+REPS FOUND: 16
+REPS WITH >= 20 CALLS: 16
+
+TOP 5 REPS BY TRUST_SCORE (higher is better)
+- REP106 | calls=550 | trust_score=0.648 | drift=0.358 | POR=4.9% | 30DACC=17.6% | CDS=53.6% | CBR=44.5% | CRT_avg=799s | CRT_p90=1036s | CRT>thr=29.6%
+- REP102 | calls=2151 | trust_score=0.647 | drift=0.356 | POR=11.1% | 30DACC=17.5% | CDS=53.0% | CBR=43.9% | CRT_avg=724s | CRT_p90=959s | CRT>thr=16.2%
+- REP104 | calls=519 | trust_score=0.636 | drift=0.368 | POR=7.3% | 30DACC=16.4% | CDS=54.3% | CBR=46.6% | CRT_avg=812s | CRT_p90=1044s | CRT>thr=30.8%
+- REP107 | calls=548 | trust_score=0.634 | drift=0.371 | POR=7.1% | 30DACC=18.4% | CDS=52.9% | CBR=48.7% | CRT_avg=813s | CRT_p90=1047s | CRT>thr=29.2%
+- REP105 | calls=559 | trust_score=0.634 | drift=0.371 | POR=8.2% | 30DACC=17.2% | CDS=53.0% | CBR=46.2% | CRT_avg=804s | CRT_p90=1046s | CRT>thr=27.7%
+
+INTERPRETATION HINTS
+- Headline KPIs can look stable while drift indicators rise (30DACC/port-outs/repeats/CRT).
+- Cleanup isn’t failure; it’s often proof you’re fixing upstream mistakes (or catching bad inputs).
+- CRT is a cost signal: even if outcomes are stable, rising CRT suggests growing friction/complexity.
+- Concentration tells you whether to fix hotspots or address broad process issues.
