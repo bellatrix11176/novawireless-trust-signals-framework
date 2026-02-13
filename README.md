@@ -6,7 +6,6 @@
 
 📄 **Flagship paper:**  
 **When KPIs Lie: Governance Signals for AI-Optimized Call Centers**  
-- [Read the PDF](paper/When_KPIs_Lie_Governance_Signals_for_AI_Optimized_Call_Centers.pdf)
 
 ---
 
