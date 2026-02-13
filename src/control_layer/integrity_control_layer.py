@@ -22,7 +22,7 @@ Writes:
 Usage:
   python src/control_layer/integrity_control_layer.py
   python src/control_layer/integrity_control_layer.py --file novawireless_synthetic_calls.csv
-  python src/control_layer/integrity_control_layer.py --crt_low 0 --crt_high 7200
+  python src/control_layer/integrity_control_layer.py --crt_min 0 --crt_max 21600
 """
 
 from __future__ import annotations
@@ -80,18 +80,9 @@ def save_json(path: Path, obj: dict) -> None:
 # Utility coercions
 # ---------------------------
 
-def coerce_numeric(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
-    out = df.copy()
-    for c in cols:
-        if c in out.columns:
-            out[c] = pd.to_numeric(out[c], errors="coerce")
-    return out
-
-
 def coerce_timestamp(df: pd.DataFrame, col: str = "timestamp") -> pd.DataFrame:
     out = df.copy()
     if col in out.columns:
-        # keep naive timestamps; your framework uses utc=False later
         out[col] = pd.to_datetime(out[col], errors="coerce")
     return out
 
@@ -153,24 +144,11 @@ def detect_crt_column(df: pd.DataFrame) -> Optional[str]:
 @dataclass
 class IntegrityConfig:
     required_columns: tuple[str, ...] = ("timestamp", "customer_phone")
-    # Flags / binary indicator columns that should be 0/1 if present
     binary_like: tuple[str, ...] = ("callback_flag", "cleanup_flag", "port_out_flag", "flag_30DACC")
-
-    # Optional ID column for duplicate checks
     unique_key: str = "interaction_id"
-
-    # Timestamp sanity: allow null? (No—required.)
     timestamp_col: str = "timestamp"
-
-    # CRT thresholds for sanity checks (not the same as your risk scaling; this is "is the value plausible?")
     crt_min_seconds: float = 0.0
     crt_max_seconds: float = 6 * 60 * 60  # 6 hours
-
-    # If you have handle time or similar, you can add it here later.
-    # Example:
-    # handle_time_col: Optional[str] = "handle_time_sec"
-    # handle_time_min: float = 0.0
-    # handle_time_max: float = 4 * 60 * 60
 
 
 def build_flags(df: pd.DataFrame, cfg: IntegrityConfig) -> pd.DataFrame:
@@ -180,7 +158,7 @@ def build_flags(df: pd.DataFrame, cfg: IntegrityConfig) -> pd.DataFrame:
     """
     flags = pd.DataFrame(index=df.index)
 
-    # Required column existence (dataset-level) => if missing, all rows are flagged
+    # Required column existence (dataset-level)
     missing_cols = [c for c in cfg.required_columns if c not in df.columns]
     flags["flag_missing_required_column"] = False
     if missing_cols:
@@ -195,9 +173,20 @@ def build_flags(df: pd.DataFrame, cfg: IntegrityConfig) -> pd.DataFrame:
     if cfg.timestamp_col in df.columns:
         flags["flag_bad_timestamp_parse"] = df[cfg.timestamp_col].isna()
 
-    # Duplicate unique key (if present)
+    # Duplicate interaction_id (ONLY among valid keys)
     if cfg.unique_key in df.columns:
-        flags["flag_duplicate_interaction_id"] = df.duplicated(subset=[cfg.unique_key], keep=False)
+        key = df[cfg.unique_key].astype(str).str.strip()
+
+        # Treat these as "missing" keys (do NOT count them in duplicate logic)
+        missing_like = {"", "nan", "none", "null", "UNKNOWN", "N/A"}
+
+        key_valid = ~key.str.lower().isin({m.lower() for m in missing_like})
+
+        dup_valid = pd.Series(False, index=df.index)
+        if key_valid.any():
+            dup_valid.loc[key_valid] = df.loc[key_valid].duplicated(subset=[cfg.unique_key], keep=False)
+
+        flags["flag_duplicate_interaction_id"] = dup_valid
     else:
         flags["flag_duplicate_interaction_id"] = False
 
@@ -228,8 +217,6 @@ def summarize_flags(flags: pd.DataFrame, n_rows: int) -> dict:
     rates = {c: float(flags[c].mean()) for c in flag_cols} if flag_cols else {}
 
     any_rate = float(flags["any_flag"].mean()) if "any_flag" in flags.columns else 0.0
-
-    # top 10 flags by rate
     top = sorted(rates.items(), key=lambda kv: kv[1], reverse=True)[:10]
 
     return {
@@ -242,18 +229,12 @@ def summarize_flags(flags: pd.DataFrame, n_rows: int) -> dict:
     }
 
 
-# ---------------------------
-# Main
-# ---------------------------
-
 def run_integrity_gate(
     input_path: Path,
     out_dir: Path,
     cfg: IntegrityConfig,
 ) -> dict:
     df_raw = load_table(input_path)
-
-    # Basic cleaning: strip col names already done
     df = df_raw.copy()
 
     # Coerce timestamp
@@ -361,7 +342,7 @@ def main() -> int:
     print(f"- {Path(s['output_clean']).name}")
     print(f"- {Path(s['output_quarantine']).name}")
     print(f"- {Path(s['output_flags']).name}")
-    print(f"- {Path('integrity_summary.json').name}")
+    print(f"- integrity_summary.json")
     return 0
 
 
